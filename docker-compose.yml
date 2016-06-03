@@ -1,7 +1,15 @@
-Squid:
-  image: sameersbn/squid:3.3.8-14
-  ports:
-    - "3128:3128"
-  volumes:
-    - /srv/docker/squid/cache:/var/spool/squid3
-  restart: always
+version: '2'
+
+services:
+  squid:
+    build: "."
+    ports:
+      - "3128:3128"
+    environment:
+      http_proxy: "${http_proxy}"
+      https_proxy: "${https_proxy}"
+    volumes:
+      - squid-cache:/var/spool/squid3
+
+volumes:
+  squid-cache:

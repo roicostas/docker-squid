@@ -1,113 +1,65 @@
-[![Circle CI](https://circleci.com/gh/sameersbn/docker-squid.svg?style=shield)](https://circleci.com/gh/sameersbn/docker-squid) [![Docker Repository on Quay.io](https://quay.io/repository/sameersbn/squid/status "Docker Repository on Quay.io")](https://quay.io/repository/sameersbn/squid)
+# docker-squid
 
-# sameersbn/squid:3.3.8-14
+Squid proxy which avoids sending local network trafic to a remote proxy
 
-- [Introduction](#introduction)
-  - [Contributing](#contributing)
-  - [Issues](#issues)
-- [Getting started](#getting-started)
-  - [Installation](#installation)
-  - [Quickstart](#quickstart)
-  - [Command-line arguments](#command-line-arguments)
-  - [Persistence](#persistence)
-  - [Configuration](#configuration)
-  - [Usage](#usage)
-  - [Logs](#logs)
-- [Maintenance](#maintenance)
-  - [Upgrading](#upgrading)
-  - [Shell Access](#shell-access)
-
-# Introduction
-
-`Dockerfile` to create a [Docker](https://www.docker.com/) container image for [Squid proxy server](http://www.squid-cache.org/).
-
-Squid is a caching proxy for the Web supporting HTTP, HTTPS, FTP, and more. It reduces bandwidth and improves response times by caching and reusing frequently-requested web pages. Squid has extensive access controls and makes a great server accelerator.
-
-## Contributing
-
-If you find this image useful here's how you can help:
-
-- Send a pull request with your awesome features and bug fixes
-- Help users resolve their [issues](../../issues?q=is%3Aopen+is%3Aissue).
-- Support the development of this image with a [donation](http://www.damagehead.com/donate/)
-
-## Issues
-
-Before reporting your issue please try updating Docker to the latest version and check if it resolves the issue. Refer to the Docker [installation guide](https://docs.docker.com/installation) for instructions.
-
-SELinux users should try disabling SELinux using the command `setenforce 0` to see if it resolves the issue.
-
-If the above recommendations do not help then [report your issue](../../issues/new) along with the following information:
-
-- Output of the `docker version` and `docker info` commands
-- The `docker run` command or `docker-compose.yml` used to start the image. Mask out the sensitive bits.
-- Please state if you are using [Boot2Docker](http://www.boot2docker.io), [VirtualBox](https://www.virtualbox.org), etc.
+Simplify proxy configuration for local development
++ Configure a remote (parent) proxy with standard environment variables
++ Connections to local servers go directly to them
++ External connections go through the parent proxy
 
 # Getting started
 
-## Installation
-
-Automated builds of the image are available on [Dockerhub](https://hub.docker.com/r/sameersbn/squid) and is the recommended method of installation.
-
-> **Note**: Builds are also available on [Quay.io](https://quay.io/repository/sameersbn/squid)
+## Build docker image
 
 ```bash
-docker pull sameersbn/squid:3.3.8-14
-```
-
-Alternatively you can build the image yourself.
-
-```bash
-docker build -t sameersbn/squid github.com/sameersbn/docker-squid
+git clone https://github.com/roicostas/docker-squid
+cd docker-squid
+docker build -t roicostas/squid
 ```
 
 ## Quickstart
 
-Start Squid using:
+Start proxy with docker run:
 
 ```bash
 docker run --name squid -d --restart=always \
   --publish 3128:3128 \
-  --volume /srv/docker/squid/cache:/var/spool/squid3 \
-  sameersbn/squid:3.3.8-14
+  -e http_proxy=http://user:password@myproxy.com:1234 \
+  -e https_proxy=https://user:password@myproxy.com:1234 \
+  --volume squid-cache:/var/spool/squid3 \
+  roicostas:squid
 ```
 
-*Alternatively, you can use the sample [docker-compose.yml](docker-compose.yml) file to start the container using [Docker Compose](https://docs.docker.com/compose/)*
+Start proxy with docker-compose in local machine:
+
+```bash
+export http_proxy=http://user:password@myproxy.com:1234
+export https_proxy=https://user:password@myproxy.com:1234
+docker-compose up -d
+```
+
+For running docker-compose remotely set http_proxy and https_proxy variables y docker-compose.yml file
 
 ## Command-line arguments
 
-You can customize the launch command of the Squid server by specifying arguments to `squid3` on the `docker run` command. For example the following command prints the help menu of `squid3` command:
+You can customize the launch command of the Squid server by specifying arguments to `squid3` on the `docker run` command, e.g print help:
 
 ```bash
-docker run --name squid -it --rm \
-  --publish 3128:3128 \
-  --volume /srv/docker/squid/cache:/var/spool/squid3 \
-  sameersbn/squid:3.3.8-14 -h
-```
-
-## Persistence
-
-For the cache to preserve its state across container shutdown and startup you should mount a volume at `/var/spool/squid3`.
-
-> *The [Quickstart](#quickstart) command already mounts a volume for persistence.*
-
-SELinux users should update the security context of the host mountpoint so that it plays nicely with Docker:
-
-```bash
-mkdir -p /srv/docker/squid
-chcon -Rt svirt_sandbox_file_t /srv/docker/squid
+docker run --rm roicostas/squid -h
 ```
 
 ## Configuration
 
-Squid is a full featured caching proxy server and a large number of configuration parameters. To configure Squid as per your requirements edit the default [squid.conf](squid.conf) and volume mount it at `/etc/squid3/squid.conf`.
+Environment http_proxy and https_proxy vars are used to configure parent servers which generate cache_peer configuration lines
+
+A custom configuration file can be provided with a volume `--volume /path/to/squid.conf:/etc/squid3/squid.conf` 
 
 ```bash
 docker run --name squid -d --restart=always \
   --publish 3128:3128 \
   --volume /path/to/squid.conf:/etc/squid3/squid.conf \
-  --volume /srv/docker/squid/cache:/var/spool/squid3 \
-  sameersbn/squid:3.3.8-14
+  --volume squid-cache:/var/spool/squid3 \
+  roicostas/squid
 ```
 
 To reload the Squid configuration on a running instance you can send the `HUP` signal to the container.
@@ -118,22 +70,33 @@ docker kill -s HUP squid
 
 ## Usage
 
-Configure your web browser network/connection settings to use the proxy server which is available at `172.17.42.1:3128`
+Configure environment variables and programs to connect to roicostas/squid proxy instead of the parent proxy
 
-If you are using Linux then you can also add the following lines to your `.bashrc` file allowing command line applications to use the proxy server for outgoing connections.
+Example with roicostas/squid running on 192.168.10.10:3128 and a parent proxy on 10.10.10.10:3128
 
+- Parent proxy on 10.10.10.10:3128
 ```bash
-export ftp_proxy=http://172.17.42.1:3128
-export http_proxy=http://172.17.42.1:3128
-export https_proxy=http://172.17.42.1:3128
+docker run --name squid -d --restart=always \
+  --publish 3128:3128 \
+  --volume squid-cache:/var/spool/squid3 \
+  roicostas:squid
 ```
 
-To use Squid in your Docker containers add the following line to your `Dockerfile`.
+- Run squid with parent proxy 10.10.10.10:3128
+```bash
+docker run --name squid -d --restart=always \
+  --publish 3128:3128 \
+  -e http_proxy=http://10.10.10.10:3128 \
+  -e https_proxy=https://10.10.10.10:3128 \
+  --volume squid-cache:/var/spool/squid3 \
+  roicostas:squid
+```
 
-```dockerfile
-ENV http_proxy=http://172.17.42.1:3128 \
-    https_proxy=http://172.17.42.1:3128 \
-    ftp_proxy=http://172.17.42.1:3128
+- Configure terminal for using local proxy
+```bash
+export ftp_proxy=http://192.168.10.10:3128
+export http_proxy=http://192.168.10.10:3128
+export https_proxy=http://192.168.10.10:3128
 ```
 
 ## Logs
@@ -142,46 +105,4 @@ To access the Squid logs, located at `/var/log/squid3/`, you can use `docker exe
 
 ```bash
 docker exec -it squid tail -f /var/log/squid3/access.log
-```
-
-You can also mount a volume at `/var/log/squid3/` so that the logs are directly accessible on the host.
-
-# Maintenance
-
-## Upgrading
-
-To upgrade to newer releases:
-
-  1. Download the updated Docker image:
-
-  ```bash
-  docker pull sameersbn/squid:3.3.8-14
-  ```
-
-  2. Stop the currently running image:
-
-  ```bash
-  docker stop squid
-  ```
-
-  3. Remove the stopped container
-
-  ```bash
-  docker rm -v squid
-  ```
-
-  4. Start the updated image
-
-  ```bash
-  docker run -name squid -d \
-    [OPTIONS] \
-    sameersbn/squid:3.3.8-14
-  ```
-
-## Shell Access
-
-For debugging and maintenance purposes you may want access the containers shell. If you are using Docker version `1.3.0` or higher you can access a running containers shell by starting `bash` using `docker exec`:
-
-```bash
-docker exec -it squid bash
 ```

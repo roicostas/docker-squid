@@ -2,7 +2,8 @@
 
 Squid proxy which avoids sending local network trafic to a remote proxy
 
-Simplify proxy configuration for local development
+Simplifies proxy configuration for local development
+
 + Configure a remote (parent) proxy with standard environment variables
 + Connections to local servers go directly to them
 + External connections go through the parent proxy
@@ -50,7 +51,7 @@ docker run --rm roicostas/squid -h
 
 ## Configuration
 
-Environment http_proxy and https_proxy vars are used to configure parent servers which generate cache_peer configuration lines
+http_proxy and https_proxy environment vars are used to configure parent servers which generate cache_peer configuration lines. If no proxy configuration is provided it works as a normal proxy
 
 A custom configuration file can be provided with a volume `--volume /path/to/squid.conf:/etc/squid3/squid.conf` 
 
@@ -66,6 +67,16 @@ To reload the Squid configuration on a running instance you can send the `HUP` s
 
 ```bash
 docker kill -s HUP squid
+```
+
+To add/edit/remove connections which skip the parent proxy edit `acl privnet` in the configuration file:
+
+- Make connections to 10.0.0.0/8 network go through the proxy => remove `acl privnet dst 10.0.0.0/8` line
+
+```bash
+# Connections to local networks
+acl privnet dst 172.16.0.0/12
+acl privnet dst 192.168.0.0/16
 ```
 
 ## Usage

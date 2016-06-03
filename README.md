@@ -15,7 +15,7 @@ Simplifies proxy configuration for local development
 ```bash
 git clone https://github.com/roicostas/docker-squid
 cd docker-squid
-docker build -t roicostas/squid
+docker build -t roicostas/squid .
 ```
 
 ## Quickstart
@@ -28,7 +28,7 @@ docker run --name squid -d --restart=always \
   -e http_proxy=http://user:password@myproxy.com:1234 \
   -e https_proxy=https://user:password@myproxy.com:1234 \
   --volume squid-cache:/var/spool/squid3 \
-  roicostas:squid
+  roicostas/squid
 ```
 
 Start proxy with docker-compose in local machine:
@@ -90,7 +90,7 @@ Example with roicostas/squid running on 192.168.10.10:3128 and a parent proxy on
 docker run --name squid -d --restart=always \
   --publish 3128:3128 \
   --volume squid-cache:/var/spool/squid3 \
-  roicostas:squid
+  roicostas/squid
 ```
 
 - Run squid with parent proxy 10.10.10.10:3128
@@ -100,7 +100,7 @@ docker run --name squid -d --restart=always \
   -e http_proxy=http://10.10.10.10:3128 \
   -e https_proxy=https://10.10.10.10:3128 \
   --volume squid-cache:/var/spool/squid3 \
-  roicostas:squid
+  roicostas/squid
 ```
 
 - Configure terminal for using local proxy

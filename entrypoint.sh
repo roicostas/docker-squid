@@ -15,11 +15,12 @@ configure_parent_proxy() {
     for var in $(env | grep -i http.*proxy); do
         # format: http_proxy=http://user:password@proxy:port
 
+       params="no-query default"
        # Get user and password
-        user_pass=""
         if [ "$(echo $var | grep "@")" ]; then
             # Parse user and password
             user_pass="login=$(echo $var | grep -oP "\w+:\w+" | head -n1)"
+            params="$params $user_pass"
         fi
 
         # Get proxy name/IP and port
@@ -29,8 +30,8 @@ configure_parent_proxy() {
         [ -z "$proxy" ] && continue
         [ -z "$port" ] && port=80
 
-        parent_proxy="cache_peer $proxy parent $port 0 no-query default $user_pass"
-        if [ -z "$(cat /etc/squid3/squid.conf | grep "$parent_proxy")" ]; then
+        parent_proxy="cache_peer $proxy parent $port 0 $params"
+        if [ -z "$(cat /etc/squid3/squid.conf | grep "cache_peer $proxy")" ]; then
             echo "Adding $parent_proxy"
             echo $parent_proxy >> /etc/squid3/squid.conf
         fi

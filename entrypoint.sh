@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 
 create_log_dir() {
   mkdir -p ${SQUID_LOG_DIR}
@@ -12,16 +11,35 @@ create_cache_dir() {
   chown -R ${SQUID_USER}:${SQUID_USER} ${SQUID_CACHE_DIR}
 }
 
-apply_backward_compatibility_fixes() {
-  if [[ -f /etc/squid3/squid.user.conf ]]; then
-    rm -rf /etc/squid3/squid.conf
-    ln -sf /etc/squid3/squid.user.conf /etc/squid3/squid.conf
-  fi
+configure_parent_proxy() {
+    for var in $(env | grep -i http.*proxy); do
+        # format: http_proxy=http://user:password@proxy:port
+
+       # Get user and password
+        user_pass=""
+        if [ "$(echo $var | grep "@")" ]; then
+            # Parse user and password
+            user_pass="login=$(echo $var | grep -oP "\w+:\w+" | head -n1)"
+        fi
+
+        # Get proxy name/IP and port
+        proxy_port="$(echo $var | grep -oP "[\w\.]+[:]{0,1}\d*$")"
+        proxy="$(echo $proxy_port | grep -oP "^[\w\.]+")"
+        port="$(echo $proxy_port | grep -oP ":\d+$" | tr -d ':')"
+        [ -z "$proxy" ] && continue
+        [ -z "$port" ] && port=80
+
+        parent_proxy="cache_peer $proxy parent $port 0 no-query default $user_pass"
+        if [ -z "$(cat /etc/squid3/squid.conf | grep "$parent_proxy")" ]; then
+            echo "Adding $parent_proxy"
+            echo $parent_proxy >> /etc/squid3/squid.conf
+        fi
+    done
 }
 
 create_log_dir
 create_cache_dir
-apply_backward_compatibility_fixes
+configure_parent_proxy
 
 # allow arguments to be passed to squid3
 if [[ ${1:0:1} = '-' ]]; then

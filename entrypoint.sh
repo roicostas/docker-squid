@@ -21,6 +21,8 @@ configure_parent_proxy() {
             # Parse user and password
             user_pass="login=$(echo $var | grep -oP "\w+:\w+" | head -n1)"
             params="$params $user_pass"
+        else
+            params="$params login=PASSTHRU"
         fi
 
         # Get proxy name/IP and port

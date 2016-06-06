@@ -52,6 +52,37 @@ docker-compose up -d
 
 For running docker-compose remotely set http_proxy and https_proxy variables y docker-compose.yml file
 
+## Usage
+
+Configure environment variables and programs to connect to roicostas/squid proxy instead of the parent proxy
+
+Example with roicostas/squid running on 192.168.10.10:3128 and a parent proxy on 10.10.10.10:3128
+
+- Parent proxy on 10.10.10.10:3128
+```bash
+docker run --name squid -d --restart=always \
+  --publish 3128:3128 \
+  --volume squid-cache:/var/spool/squid3 \
+  roicostas/squid
+```
+
+- Run squid with parent proxy 10.10.10.10:3128
+```bash
+docker run --name squid -d --restart=always \
+  --publish 3128:3128 \
+  -e http_proxy=http://10.10.10.10:3128 \
+  -e https_proxy=https://10.10.10.10:3128 \
+  --volume squid-cache:/var/spool/squid3 \
+  roicostas/squid
+```
+
+- Configure terminal for using local proxy
+```bash
+export ftp_proxy=http://192.168.10.10:3128
+export http_proxy=http://192.168.10.10:3128
+export https_proxy=http://192.168.10.10:3128
+```
+
 ## Command-line arguments
 
 You can customize the launch command of the Squid server by specifying arguments to `squid3` on the `docker run` command, e.g print help:
@@ -89,37 +120,6 @@ To add/edit/remove connections which skip the parent proxy edit `acl privnet` in
 acl privnet dst 172.16.0.0/12
 acl privnet dst 192.168.0.0/16
 acl privnet dst 10.0.0.0/8
-```
-
-## Usage
-
-Configure environment variables and programs to connect to roicostas/squid proxy instead of the parent proxy
-
-Example with roicostas/squid running on 192.168.10.10:3128 and a parent proxy on 10.10.10.10:3128
-
-- Parent proxy on 10.10.10.10:3128
-```bash
-docker run --name squid -d --restart=always \
-  --publish 3128:3128 \
-  --volume squid-cache:/var/spool/squid3 \
-  roicostas/squid
-```
-
-- Run squid with parent proxy 10.10.10.10:3128
-```bash
-docker run --name squid -d --restart=always \
-  --publish 3128:3128 \
-  -e http_proxy=http://10.10.10.10:3128 \
-  -e https_proxy=https://10.10.10.10:3128 \
-  --volume squid-cache:/var/spool/squid3 \
-  roicostas/squid
-```
-
-- Configure terminal for using local proxy
-```bash
-export ftp_proxy=http://192.168.10.10:3128
-export http_proxy=http://192.168.10.10:3128
-export https_proxy=http://192.168.10.10:3128
 ```
 
 ## Logs

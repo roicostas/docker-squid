@@ -14,10 +14,12 @@ Simplifies proxy configuration for local development
 
 Behind another proxy
 ```bash
+http_proxy=http://user:password@myproxy.com:port
+https_proxy=https://user:password@myproxy.com:port
 docker build -t roicostas/squid \
-             --build-arg http_proxy=http://myproxy.com:port \
-             --build-arg https_proxy=https://myproxy.com:port \
-             github.com/roicostas/docker-squid                                  
+             --build-arg http_proxy=$http_proxy \
+             --build-arg https_proxy=$https_proxy \
+             github.com/roicostas/docker-squid
 ```
 
 Without proxy
@@ -30,10 +32,12 @@ docker build -t roicostas/squid github.com/roicostas/docker-squid
 Start proxy with docker run:
 
 ```bash
+http_proxy=http://user:password@myproxy.com:port
+https_proxy=https://user:password@myproxy.com:port
 docker run --name squid -d --restart=always \
   --publish 3128:3128 \
-  -e http_proxy=http://user:password@myproxy.com:1234 \
-  -e https_proxy=https://user:password@myproxy.com:1234 \
+  -e http_proxy=$http_proxy \
+  -e https_proxy=$https_proxy \
   --volume squid-cache:/var/spool/squid3 \
   roicostas/squid
 ```

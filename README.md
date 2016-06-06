@@ -12,10 +12,17 @@ Simplifies proxy configuration for local development
 
 ## Build docker image
 
+Behind another proxy
 ```bash
-git clone https://github.com/roicostas/docker-squid
-cd docker-squid
-docker build -t roicostas/squid .
+docker build -t roicostas/squid \
+             --build-arg http_proxy=http://myproxy.com:port \
+             --build-arg https_proxy=https://myproxy.com:port \
+             github.com/roicostas/docker-squid                                  
+```
+
+Without proxy
+```bash
+docker build -t roicostas/squid github.com/roicostas/docker-squid
 ```
 
 ## Quickstart
@@ -71,12 +78,13 @@ docker kill -s HUP squid
 
 To add/edit/remove connections which skip the parent proxy edit `acl privnet` in the configuration file:
 
-- Make connections to 10.0.0.0/8 network go through the proxy => remove `acl privnet dst 10.0.0.0/8` line
+- Make connections to 10.0.0.0/8 network go directly without going through the parent proxy  => add `acl privnet dst 10.0.0.0/8` line
 
 ```bash
 # Connections to local networks
 acl privnet dst 172.16.0.0/12
 acl privnet dst 192.168.0.0/16
+acl privnet dst 10.0.0.0/8
 ```
 
 ## Usage
@@ -117,3 +125,7 @@ To access the Squid logs, located at `/var/log/squid3/`, you can use `docker exe
 ```bash
 docker exec -it squid tail -f /var/log/squid3/access.log
 ```
+
+## Authentication to parent proxy
+
+Authentication parameters are taken from environment variables from docker run, e.g. `-e http_proxy="user:password@myproxy:port"`
